@@ -1,0 +1,35 @@
+Goal of the Project:
+Create a neural network which learns to play a variety of games:
+    1. Pole Cart
+    2. Tic Tac Toe
+    3. Snake
+
+Parts:
+    - Neural network implementation.
+        - Neural network layer
+            - May or may not be a class(likely will be a class)
+            - Trying to not pass the activation function as an object.
+            - IMPORTANT: Will NOT store output/input values-- far too complicated pipework to deal with.
+        - UNSURE: Will likely not store output/input values.
+        - If the activation function object is not passed as an argument, then it will have its own internal activation
+            functions which it will use depending on a string input.
+        - A good differentiation between training passes and forward passes
+            - This will be done by doing away with the NN.forward(); NN.backpropagation(); requirement for training.
+            - If output/input values are not stored in the NN or outside of it, then backpropagation will always require
+                an input and output dataset. This means for Q-Learning you will need to generate a dataset beforehand.
+                This may actually improve performance.
+            - For internal output/input values, this may be stored in a list at time of training. It should never be
+                stored otherwise(unless implemented as an optimization) as it makes things too complicated.
+        - More analytical variables/lists to better gauge performance.
+    - Implementation of the three games.
+        - All will be implemented as classes, for visualizations via pygame are possible.
+    - Q-Learning algorithm for the neural network.
+        - Tic-Tac-Toe
+            - As this is a 2-player game, the program flow will go as such:
+                - State1 -> NN -> Q-values1 -> Action1(best or random) -> State2
+                    - State, Q-values, and Action will be stored, the first one as the input part of the training
+                        dataset, the 2nd as what it outputted, and the 3rd as the index of what Q-value to train.
+                - Then, using the same NN, State2 -> NN -> Q-values2 -> Action2(best or random) -> State1'
+                - Lastly for training, State1' -> NN -> Q-values -> Best Q-value
+                - If a game is won, lets say by State1', then the last line is not used and raw rewards are given.
+
