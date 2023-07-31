@@ -8,7 +8,7 @@ class NeuralNetworkLayer:
 
     def __init__(self, input_size, output_size, activation_function='sigmoid'):
         """
-
+        A vanilla Neural Network layer.
         :param input_size:
         :param output_size:
         :param activation_function: Name of the activation function, supported activation functions are:
@@ -65,8 +65,10 @@ class NeuralNetwork:
 
     def __init__(self, layers: list[NeuralNetworkLayer], learning_rate=0.01):
         """
-
-        :param layers: Iterable containing NeuralNetworkLayer objects. The objects are NOT copied.
+        A vanilla Neural Network.
+        :param layers: Iterable containing NeuralNetworkLayer objects. The objects are NOT copied, so if you are passing
+        the layers of another neural network, it will create a reference to the layers of that other neural network. If
+        this behavior is undesired, clone the layer first.
         """
         # A list containing the layers, which contain the weights and biases of the network.
         self.layers = layers
@@ -134,32 +136,43 @@ class NeuralNetwork:
 # Test variables
 
 
-X = np.array([[0, 1],
-              [1, 0],
-              [0, 0],
-              [1, 1]])
+X = np.array([[0, 1, 1],
+              [1, 0, 1],
+              [0, 0, 1],
+              [1, 1, 1],
+
+              [0, 1, 0],
+              [1, 0, 0],
+              [0, 0, 0]
+              ])
 
 Y = np.array([[1],
               [1],
               [0],
-              [0]])
+              [0],
+              [0],
+              [0],
+              [1]])
 
 np.random.seed(0)
 
 if __name__ == "__main__":
-    sample_network = NeuralNetwork([NeuralNetworkLayer(2, 3, 'relu'),
-                                    NeuralNetworkLayer(3, 1, 'relu')],
-                                   learning_rate=0.1)
+    sample_network = NeuralNetwork([NeuralNetworkLayer(3, 4, 'sigmoid'),
+                                    NeuralNetworkLayer(4, 1, 'sigmoid')],
+                                   learning_rate=1)
 
     # A test which trains the NN on xor.
+    print(sample_network.predict(X))
+
     errors = []
     for i in range(10000):
         err = sample_network.epoch(X, Y, True)  # type: np.ndarray
         errors.append(err.sum())
         if i % 1000 == 0:
-            print(f"Epoch {i + 1} | Error: {err.sum()} | Progress: {i / 100}% Complete")
+            print(f"Epoch {i + 1} | Error: {err.sum()} | Progress: {i / 10}% Complete")
 
-    print(sample_network.predict(X))
+    print(sample_network.predict(np.array([1, 1, 0])))
 
-    plot_smoothed(errors, 1)
+    plt.plot(errors)
+    plot_smoothed(errors, 1, .1)
     plt.show()

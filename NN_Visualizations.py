@@ -4,14 +4,16 @@ from scipy.ndimage import gaussian_filter1d
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_smoothed(values, sigma=1.0):
+def plot_smoothed(values, sigma=1.0, offset=0):
     """
     Literally copy and pasted from a chatbot
     :param values:
     :param sigma:
+    :param offset: Offset of graph in the y-axis
     :return:
     """
-    smoothed = gaussian_filter1d(values, sigma)
+
+    smoothed = gaussian_filter1d(np.array(values) + offset, sigma)
     plt.plot(smoothed)
 
 
@@ -27,7 +29,6 @@ if __name__ == "__main__":
         a.extend([random.random() * high for _ in range(10)])
 
     for i in range(10):
-        plot_smoothed(a, i / 10 + 1)
-        a = [x + OFFSET for x in a]
+        plot_smoothed(np.array(a), i / 10 + 1, offset=OFFSET * i)
 
     plt.show()
