@@ -6,25 +6,34 @@ from NN_Visualizations import plot_smoothed
 
 class NeuralNetworkLayer:
 
-    def __init__(self, input_size, output_size, activation_function='sigmoid'):
+    def __init__(self, input_size, output_size, activation_function='sigmoid', disable_bias=False):
         """
         A vanilla Neural Network layer.
         :param input_size:
         :param output_size:
         :param activation_function: Name of the activation function, supported activation functions are:
         sigmoid
+        tanh
         relu
+        linear
+        :param disable_bias: Whether to disable the bias.
         """
         # Multiplying it by 2, then subtracting 1 lets the mean weight value be 0 instead of 0.5
         self.weights = 2 * np.random.random((input_size, output_size)) - 1
-        self.bias = 2 * np.random.random(output_size) - 1
+        self.bias_disabled = disable_bias
+        if not self.bias_disabled:
+            self.bias = 2 * np.random.random(output_size) - 1
+        else:
+            self.bias = None
 
         # Info about layer
         self.input_size = input_size
         self.output_size = output_size
 
         activation_functions_dictionary = {'sigmoid': self.sigmoid,
-                                           'relu': self.relu}
+                                           'tanh': self.tanh,
+                                           'relu': self.relu,
+                                           'linear': self.linear}
         self.activation_function_str = activation_function  # Name, or the string argument for the activation function.
         self.activation_function = activation_functions_dictionary[activation_function]
 
@@ -36,14 +45,27 @@ class NeuralNetworkLayer:
         return 1 / (1 + np.exp(-x))  # Missed the minus... spent 30-50 minutes debugging...
 
     @staticmethod
+    def tanh(x, derivative=False):
+        if derivative:
+            return 1 - x ** 2  # Derivative of tanh(x) is 1 - tanh^2(x)
+        return np.tanh(x)
+
+    @staticmethod
     def relu(x, derivative=False):
         if derivative:
             return np.greater(x, 0)
         return np.where(x > 0, x, 0)
 
+    @staticmethod
+    def linear(x, derivative=False):
+        if derivative:
+            return 1
+        return x
+
     def feed_forward(self, input_values):
         output_values = input_values.dot(self.weights)
-        output_values += self.bias
+        if not self.bias_disabled:
+            output_values += self.bias
         output_values = self.activation_function(output_values)
 
         return output_values
@@ -55,7 +77,8 @@ class NeuralNetworkLayer:
         :return:
         """
         raw_output_values = input_values.dot(self.weights)
-        raw_output_values += self.bias
+        if not self.bias_disabled:
+            raw_output_values += self.bias
 
         # Returns both activated and non-activated values.
         return self.activation_function(raw_output_values), raw_output_values
@@ -119,12 +142,13 @@ class NeuralNetwork:
         for layer, raw_out, inp, act_out in zip(reversed(self.layers), reversed(raw_outputs),
                                                 reversed(inputs), reversed(act_outputs)):
             # If the layer has a sigmoid activation function, use the activated outputs instead for the derivative.
-            if layer.activation_function_str == 'sigmoid':
+            if layer.activation_function_str == 'sigmoid' or layer.activation_function_str == 'tanh':
                 delta *= layer.activation_function(act_out, derivative=True)
             else:
                 delta *= layer.activation_function(raw_out, derivative=True)
 
-            layer.bias += delta.sum(axis=0) * self.learning_rate
+            if not layer.bias_disabled:
+                layer.bias += delta.sum(axis=0) * self.learning_rate
             layer.weights += inp.T.dot(delta) * self.learning_rate
 
             delta = delta.dot(layer.weights.T)
@@ -154,7 +178,7 @@ Y = np.array([[1],
               [0],
               [1]])
 
-np.random.seed(0)
+np.random.seed(123)
 
 if __name__ == "__main__":
     sample_network = NeuralNetwork([NeuralNetworkLayer(3, 4, 'sigmoid'),
