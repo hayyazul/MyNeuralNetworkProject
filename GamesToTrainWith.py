@@ -4,7 +4,6 @@ import pickle
 import gymnasium as gym
 import random
 import numpy as np
-import time
 
 import QLearningAgent as QLA
 import NeuralNetwork as NN
@@ -51,17 +50,14 @@ def episode(AI: QLA.QAgent, explore_rate=0.05, diagnostics=True):
 
         # Then iterate the state
         observation, reward, terminated, truncated, info = env.step(action)
-
-        reward *= REWARD_FACTOR  # For some reason, dividing the environment reward by 1000 makes it learn far better.
-        # This is likely because for tanh, 1.0 is the highest output possible, so the network learns to output big
-        # numbers all the time(as that's what it sees most of the time).
-        # reward = tick / 10000  # - abs(pole_angle)
+        pole_angle = observation[2]
+        reward = -abs(pole_angle) + tick / 10000
 
         # Play/gather data until the game ends.
         if terminated:
             # Diagnostic var.
             if diagnostics:
-                AVERAGE_REWARD.append(reward)
+                AVERAGE_REWARD.append(tick)
             # Same as with the game not ending, but without the need to evaluate future rewards as none will exist.
             desired_output = AI.update_rule(-2, 0, action, last_q_values)
             training_data.append((last_observation, desired_output))
@@ -70,7 +66,7 @@ def episode(AI: QLA.QAgent, explore_rate=0.05, diagnostics=True):
         elif tick > 1000:
             # Diagnostic var.
             if diagnostics:
-                AVERAGE_REWARD.append(reward)
+                AVERAGE_REWARD.append(tick)
             # Same as with the game not ending, but without the need to evaluate future rewards as none will exist.
             desired_output = AI.update_rule(2, 0, action, last_q_values)
             training_data.append((last_observation, desired_output))
@@ -119,8 +115,7 @@ def visualize_ai(AI, diagnostics=False, render=True, terminal=True):
         # Then iterate the state
         reward = 0
         observation, reward, terminated, truncated, info = env.step(action)
-
-        reward *= REWARD_FACTOR
+        reward = -abs(observation[2])
 
         # Play until the game ends.
         if not terminal and tick % 100 == 0:
@@ -131,6 +126,7 @@ def visualize_ai(AI, diagnostics=False, render=True, terminal=True):
 
 
 # --- Test Vars --- #
+
 def save_ai(ai, folder_path, file_name):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
@@ -146,68 +142,43 @@ np.random.seed(123)
 training_set = []
 AVERAGE_REWARD = []  # List of rewards, not a list of average rewards. Bad naming.
 
-EPISODES_PER_EPOCH = 1
-CHECK_EVERY = 1000
-REWARD_FACTOR = 1 / 2500  # Factor for reward
-
-ENVIRONMENT = "LunarLander-v2"
+ENVIRONMENT = 'CartPole-v1'
 
 if __name__ == "__main__":
     # Code to find out size of input/output.
     env0 = gym.make(ENVIRONMENT)
     obs, inf = env0.reset(seed=0)
-
     input_size = len(obs)
     output_size = env0.action_space.n
 
     test_AI = QLA.QAgent((NN.NeuralNetworkLayer(input_size, 16, activation_function='relu', disable_bias=True),
                           NN.NeuralNetworkLayer(16, 8, activation_function='relu', disable_bias=True),
                           NN.NeuralNetworkLayer(8, output_size, activation_function='tanh', disable_bias=True)),
-                         alpha=0.5, discount=0.99, learning_rate=0.007, seed=None)
+                         alpha=0.5, discount=0.99, learning_rate=0.01)
+
 
     explr_rate = 0.1
-
-    last_time = time.time()
-    for __ in range(60001):
-        # Initial explore rates:
-        # explr_rate = 0.1
-        # alpha = 0.5
-
-        if __ == 4000:
+    for __ in range(100001):
+        if __ == 5000:
             explr_rate = 0.02
             test_AI.alpha = 0.1
 
-        if __ == 5000:
+        if __ == 10000:
             explr_rate = 0.01
             test_AI.alpha = 0.05
-            # EPISODES_PER_EPOCH = 10
 
-        if __ == 10000:
+        if __ == 40000:
             explr_rate = 0.005
             test_AI.alpha = 0.02
 
-        if __ == 30000:
-            explr_rate = 0.001
-            test_AI.alpha = 0.005
-
-        for _ in range(EPISODES_PER_EPOCH):
+        for _ in range(1):
             training_set.extend(episode(test_AI, explore_rate=explr_rate))
 
-        # Diagnostics
-        if __ % CHECK_EVERY == 0:
-            current_time = time.time()
-            elapsed_time = current_time - last_time
-            last_time = current_time
-            print('\n', f"Dataset Generation Finished! No. {__}")
-            print("Q-Agent Rewards: ")
-            print(f"----Average Reward: {sum(AVERAGE_REWARD[-CHECK_EVERY:]) / CHECK_EVERY / REWARD_FACTOR}"
-                  f" | Raw w/ Reward Factor: {sum(AVERAGE_REWARD[-CHECK_EVERY:]) / CHECK_EVERY}")
-            print(f"----Best Reward: {max(AVERAGE_REWARD[-CHECK_EVERY:]) / REWARD_FACTOR}"
-                  f" | Raw w/ Reward Factor: {max(AVERAGE_REWARD[-CHECK_EVERY:])}")
-            print(f"Time To Train: {round(elapsed_time * 100) / 100} seconds | "
-                  f"Approx. {1000 * elapsed_time / CHECK_EVERY} ms per Epoch")
-            print('\n', "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            visualize_ai(test_AI)
+        if __ % 1000 == 0:
+            print(f"Dataset Generation Finished! No. {__}")
+            print(f"Average Reward: {sum(AVERAGE_REWARD[-1000:]) / 1000}")
+            print("# -------------------------------- #")
+            # visualize_ai(test_AI)
         # visualize_ai(test_AI, diagnostics=True, render=False)
 
         test_AI.update_q_values(training_set)
@@ -218,4 +189,5 @@ if __name__ == "__main__":
     # After training
 
     NNV.plot_smoothed(AVERAGE_REWARD, sigma=10, show=True)
+    save_ai(test_AI, 'c:\\Users\\Ayyaz\\PycharmProjects\\NewNeuralNetworkProject\\stuff', 'myAI')
     visualize_ai(test_AI, terminal=False)

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 def plot_smoothed(values, sigma=1.0, offset=0, show=False):
     """
+    Literally copy and pasted from a chatbot
     :param values:
     :param sigma:
     :param offset: Offset of graph in the y-axis

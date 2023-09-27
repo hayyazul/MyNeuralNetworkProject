@@ -86,18 +86,13 @@ class NeuralNetworkLayer:
 
 class NeuralNetwork:
 
-    def __init__(self, layers: list[NeuralNetworkLayer], learning_rate=0.01, seed=None):
+    def __init__(self, layers: list[NeuralNetworkLayer], learning_rate=0.01):
         """
         A vanilla Neural Network.
         :param layers: Iterable containing NeuralNetworkLayer objects. The objects are NOT copied, so if you are passing
         the layers of another neural network, it will create a reference to the layers of that other neural network. If
         this behavior is undesired, clone the layer first.
         """
-        # Set the seed if specified.
-        if seed is None:
-            pass
-        else:
-            np.random.seed(seed)
         # A list containing the layers, which contain the weights and biases of the network.
         self.layers = layers
 
@@ -188,7 +183,7 @@ np.random.seed(123)
 if __name__ == "__main__":
     sample_network = NeuralNetwork([NeuralNetworkLayer(3, 4, 'sigmoid'),
                                     NeuralNetworkLayer(4, 1, 'sigmoid')],
-                                   learning_rate=1, seed=123)
+                                   learning_rate=1)
 
     # A test which trains the NN on xor.
     print(sample_network.predict(X))
